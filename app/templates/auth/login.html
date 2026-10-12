@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I-STE Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0d1117;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+        }
+
+        /* Subtle background glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px; left: 50%;
+            transform: translateX(-50%);
+            width: 600px; height: 400px;
+            background: radial-gradient(ellipse,
+                rgba(46,204,113,0.06) 0%,
+                transparent 70%);
+            pointer-events: none;
+        }
+
+        .login-box {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 16px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+            animation: fadeUp 0.35s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(16px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Logo */
+        .logo-wrap {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .logo-icon {
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #e74c3c 0%, #f39c12 50%, #2ecc71 100%);
+            border-radius: 16px;
+            display: flex; align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 14px;
+            box-shadow: 0 4px 20px rgba(46,204,113,0.2);
+        }
+        .logo-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 2px;
+        }
+        .logo-sub {
+            font-size: 12px;
+            color: #484f58;
+            margin-top: 4px;
+        }
+
+        /* Portal selector */
+        .portal-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .portal-card {
+            border: 1.5px solid #21262d;
+            border-radius: 10px;
+            padding: 14px 10px;
+            text-align: center;
+            cursor: pointer;
+            background: #0d1117;
+            transition: all 0.2s;
+        }
+        .portal-card:hover {
+            border-color: #484f58;
+        }
+        .portal-card.sel-admin {
+            border-color: #e74c3c;
+            background: rgba(231,76,60,0.07);
+        }
+        .portal-card.sel-user {
+            border-color: #2ecc71;
+            background: rgba(46,204,113,0.07);
+        }
+        .portal-icon { font-size: 24px; margin-bottom: 6px; }
+        .portal-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #c9d1d9;
+        }
+        .portal-card.sel-admin .portal-name { color: #e74c3c; }
+        .portal-card.sel-user  .portal-name { color: #2ecc71; }
+        .portal-hint {
+            font-size: 10px;
+            color: #484f58;
+            margin-top: 2px;
+        }
+
+        /* Divider */
+        .divider-line {
+            border: none;
+            border-top: 1px solid #21262d;
+            margin: 0 0 20px;
+        }
+
+        /* Portal badge */
+        .portal-badge {
+            display: block;
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .badge-admin { color: #e74c3c; }
+        .badge-user  { color: #2ecc71; }
+
+        /* Form */
+        .field-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b949e;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .field-input {
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            color: #c9d1d9;
+            padding: 11px 14px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            margin-bottom: 14px;
+        }
+        .field-input:focus {
+            outline: none;
+            border-color: #2ecc71;
+            box-shadow: 0 0 0 3px rgba(46,204,113,0.1);
+        }
+        .field-input::placeholder { color: #2d333b; }
+
+        /* Login button */
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .btn-admin {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .btn-admin:hover {
+            background: #c0392b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(231,76,60,0.3);
+        }
+        .btn-user {
+            background: #2ecc71;
+            color: #000;
+        }
+        .btn-user:hover {
+            background: #27ae60;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(46,204,113,0.3);
+        }
+
+        /* Separator */
+        .or-sep {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+            color: #484f58;
+            font-size: 12px;
+        }
+        .or-sep::before,
+        .or-sep::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #21262d;
+        }
+
+        /* Google button */
+        .btn-google {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            background: #0d1117;
+            color: #c9d1d9;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .btn-google:hover {
+            border-color: #484f58;
+            background: #161b22;
+            color: #fff;
+        }
+
+        /* Demo box */
+        .demo-box {
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-top: 16px;
+            font-size: 11px;
+            color: #484f58;
+        }
+        .demo-box .demo-title {
+            color: #f39c12;
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-size: 11px;
+        }
+        .demo-box code {
+            color: #2ecc71;
+            background: rgba(46,204,113,0.08);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        /* Footer links */
+        .footer-links {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 12px;
+            color: #484f58;
+        }
+        .footer-links a {
+            color: #2ecc71;
+            text-decoration: none;
+        }
+        .footer-links a:hover { text-decoration: underline; }
+        .footer-links .sep { margin: 0 8px; color: #21262d; }
+
+        /* Alert */
+        .alert-box {
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .alert-danger  { background: rgba(231,76,60,0.1);  border: 1px solid rgba(231,76,60,0.3);  color: #e74c3c; }
+        .alert-success { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.3); color: #2ecc71; }
+        .alert-warning { background: rgba(243,156,18,0.1); border: 1px solid rgba(243,156,18,0.3); color: #f39c12; }
+        .alert-info    { background: rgba(52,152,219,0.1); border: 1px solid rgba(52,152,219,0.3); color: #3498db; }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+
+    <!-- Logo -->
+    <div class="logo-wrap">
+        <div class="logo-icon">🚦</div>
+        <div class="logo-title">I-STE</div>
+        <div class="logo-sub">Intelligent Smart Traffic Engineering System</div>
+    </div>
+
+    <!-- Portal Selector -->
+    <div class="portal-row">
+        <div class="portal-card sel-admin"
+             id="card-admin"
+             onclick="selectPortal('admin')">
+            <div class="portal-icon">👮</div>
+            <div class="portal-name">Admin Portal</div>
+            <div class="portal-hint">Traffic Officers</div>
+        </div>
+        <div class="portal-card"
+             id="card-user"
+             onclick="selectPortal('user')">
+            <div class="portal-icon">👤</div>
+            <div class="portal-name">User Portal</div>
+            <div class="portal-hint">Registered Drivers</div>
+        </div>
+    </div>
+
+    <hr class="divider-line">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert-box alert-{{ category }}">
+            {% if category == 'danger' %}⚠️
+            {% elif category == 'success' %}✅
+            {% elif category == 'warning' %}⚠️
+            {% else %}ℹ️{% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Portal Badge -->
+    <div class="portal-badge badge-admin" id="portal-badge">
+        🔴 Admin Portal — Traffic Control Dashboard
+    </div>
+
+    <!-- Login Form -->
+    <form method="POST" action="/auth/login">
+        <input type="hidden" name="portal" id="portal-input" value="admin">
+
+        <label class="field-label">Email Address</label>
+        <input type="email" name="email"
+               class="field-input"
+               placeholder="Enter your email"
+               id="email-field"
+               required>
+
+        <label class="field-label">Password</label>
+        <input type="password" name="password"
+               class="field-input"
+               placeholder="Enter your password"
+               required>
+
+        <button type="submit" class="btn-login btn-admin" id="login-btn">
+            🔐 Login to Admin Portal
+        </button>
+    </form>
+
+    <!-- Or separator -->
+    <div class="or-sep">or</div>
+
+    <!-- Google Login -->
+    <a href="/auth/login/google" class="btn-google">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.3 3.1 29.4 1 24 1 14.8 1 7 6.7 3.7 14.6l7 5.4C12.4 13.8 17.7 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.2 5.2-4.7 6.8l7.3 5.7c4.3-4 6.8-9.9 7.1-16.5z"/>
+            <path fill="#FBBC05" d="M10.7 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7-5.4C2.2 17 1 20.4 1 24s1.2 7 3.7 10l7-5.4z"/>
+            <path fill="#34A853" d="M24 47c5.4 0 10-1.8 13.3-4.9l-7.3-5.7c-1.8 1.2-4.1 1.9-6 1.9-6.3 0-11.6-4.3-13.5-10.1l-7 5.4C7 41.3 14.8 47 24 47z"/>
+        </svg>
+        Continue with Google
+    </a>
+
+    <!-- Demo credentials -->
+    <div class="demo-box" id="demo-box">
+        <div class="demo-title">🧪 Demo Credentials</div>
+        <div id="demo-admin">
+            Admin: <code>admin@iste.com</code> /
+            <code>admin123</code>
+        </div>
+        <div id="demo-user" style="display:none;">
+            User: <code>rahul@example.com</code> /
+            <code>user123</code>
+        </div>
+    </div>
+
+    <!-- Footer links -->
+    <div class="footer-links">
+        New driver?
+        <a href="/auth/register">Create Account</a>
+        <span class="sep">|</span>
+        <a href="/user/register_vehicle"
+           style="color:#f39c12;">🚗 Register Vehicle</a>
+    </div>
+
+</div>
+
+<script>
+function selectPortal(type) {
+    const cardAdmin  = document.getElementById('card-admin');
+    const cardUser   = document.getElementById('card-user');
+    const badge      = document.getElementById('portal-badge');
+    const loginBtn   = document.getElementById('login-btn');
+    const portalIn   = document.getElementById('portal-input');
+    const emailField = document.getElementById('email-field');
+    const demoAdmin  = document.getElementById('demo-admin');
+    const demoUser   = document.getElementById('demo-user');
+
+    if (type === 'admin') {
+        cardAdmin.className = 'portal-card sel-admin';
+        cardUser.className  = 'portal-card';
+        badge.className     = 'portal-badge badge-admin';
+        badge.textContent   = '🔴 Admin Portal — Traffic Control Dashboard';
+        loginBtn.className  = 'btn-login btn-admin';
+        loginBtn.textContent= '🔐 Login to Admin Portal';
+        portalIn.value      = 'admin';
+        emailField.placeholder = 'admin@iste.com';
+        demoAdmin.style.display = 'block';
+        demoUser.style.display  = 'none';
+    } else {
+        cardAdmin.className = 'portal-card';
+        cardUser.className  = 'portal-card sel-user';
+        badge.className     = 'portal-badge badge-user';
+        badge.textContent   = '🟢 User Portal — Driver Dashboard';
+        loginBtn.className  = 'btn-login btn-user';
+        loginBtn.textContent= '🚗 Login to User Portal';
+        portalIn.value      = 'user';
+        emailField.placeholder = 'rahul@example.com';
+        demoAdmin.style.display = 'none';
+        demoUser.style.display  = 'block';
+    }
+}
+
+// Prevent back button after login
+window.history.pushState(null, null, window.location.href);
+window.addEventListener('popstate', function() {
+    window.history.pushState(null, null, window.location.href);
+});
+</script>
+</body>
+</html>

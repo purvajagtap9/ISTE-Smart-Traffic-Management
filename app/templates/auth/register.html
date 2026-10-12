@@ -1,0 +1,537 @@
+<!doctype html>
+<!-- Register page UI for I-STE (Intelligent Smart Traffic Engineering). -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>I-STE Register</title>
+
+    <!-- Bootstrap 5 CSS for responsive UI. -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* Page fade-in effect for smooth UX. */
+      .fade-in {
+        animation: fadeIn 0.6s ease-in-out both;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Dark professional theme background. */
+      body {
+        min-height: 100vh;
+        background: #0b1220;
+      }
+
+      /* Animated pulses to match traffic light aesthetic. */
+      .traffic-lights {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 15% 25%, rgba(255, 0, 0, 0.18), transparent 45%),
+          radial-gradient(circle at 90% 35%, rgba(255, 200, 0, 0.14), transparent 45%),
+          radial-gradient(circle at 50% 85%, rgba(0, 255, 120, 0.14), transparent 50%);
+        animation: pulseLights 9s ease-in-out infinite;
+        filter: saturate(1.1);
+      }
+      @keyframes pulseLights {
+        0% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.02); }
+        100% { opacity: 0.6; transform: scale(1); }
+      }
+
+      /* Transparent card styling. */
+      .auth-card {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        backdrop-filter: blur(8px);
+      }
+
+      /* Brand section. */
+      .brand-badge {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(0, 255, 120, 0.3), rgba(255, 200, 0, 0.2), rgba(255, 255, 255, 0.1));
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: #eaf2ff;
+      }
+      .tagline { color: rgba(234, 242, 255, 0.86); font-weight: 600; }
+      .muted-soft { color: rgba(234, 242, 255, 0.7); }
+
+      /* Password strength bar styling. */
+      .strength-bar {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.15);
+        overflow: hidden;
+      }
+      .strength-fill {
+        height: 100%;
+        width: 0%;
+        background: #6c757d;
+        transition: width 0.2s ease-in-out, background 0.2s ease-in-out;
+      }
+      .strength-text { font-size: 13px; }
+
+      /* Phone OTP section hiding until user sends OTP. */
+      #otpSection { display: none; }
+    </style>
+  </head>
+
+  <body>
+    <div class="traffic-lights"></div>
+
+    <div class="container py-4 fade-in">
+      <!-- Brand top section. -->
+      <div class="text-center mt-3 mb-4">
+        <div class="d-flex justify-content-center align-items-center gap-3">
+          <div class="brand-badge">I</div>
+          <div>
+            <div style="color:#eaf2ff; font-weight:900; font-size:22px;">I-STE</div>
+            <div class="tagline">Intelligent Smart Traffic Engineering</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-12 col-md-8">
+          <div class="auth-card p-4">
+            <h4 class="text-white mb-3">Create your account</h4>
+            <p class="muted-soft small mb-4">
+              Fill details below. We will verify your phone using OTP.
+            </p>
+
+            <!-- Register form (we use JS to send OTP and verify inline). -->
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label text-white-50">Full Name</label>
+                <input
+                  id="fullName"
+                  type="text"
+                  class="form-control"
+                  placeholder="Enter your full name"
+                  value="{{ google_name }}"
+                />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label text-white-50">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  class="form-control"
+                  placeholder="Enter your email"
+                  autocomplete="email"
+                  value="{{ google_email }}"
+                />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label text-white-50">Phone Number</label>
+                <input id="phoneNumber" type="tel" class="form-control" placeholder="+91XXXXXXXXXX" inputmode="tel" autocomplete="tel" />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label text-white-50">Vehicle Number Plate (optional)</label>
+                <input id="plateNumber" type="text" class="form-control" placeholder="e.g., MH12AB1234" />
+              </div>
+
+              <!-- Password field for strength indicator (needed by backend user table). -->
+              <div class="col-12">
+                <label class="form-label text-white-50">Password</label>
+                <input id="password" type="password" class="form-control" placeholder="Create a password" />
+                <div class="mt-2 strength-bar">
+                  <div id="strengthFill" class="strength-fill"></div>
+                </div>
+                <div id="strengthText" class="strength-text text-white-50 mt-2">Password strength: -</div>
+              </div>
+            </div>
+
+            <!-- Register with Google button (demo behavior: user fills fields manually in this starter UI). -->
+            <div class="mt-4">
+              <a
+                id="registerGoogleBtn"
+                href="/register/google"
+                class="btn btn-primary w-100 py-2 text-decoration-none"
+                style="border-radius: 12px; color: white; display: inline-flex; align-items: center; justify-content: center;"
+              >
+                Register with Google
+              </a>
+              <div class="muted-soft small mt-2">
+                Beginner note: this starter button helps later when you add Google registration flow.
+              </div>
+            </div>
+
+            <!-- Send OTP button. -->
+            <div class="mt-4">
+              <button
+                id="sendOtpBtn"
+                type="button"
+                class="btn btn-success w-100 py-2"
+                style="border-radius: 12px;"
+              >
+                Send OTP
+              </button>
+
+              <div class="mt-3" id="registerMsg" style="min-height: 18px; color: rgba(234, 242, 255, 0.9);"></div>
+              <div class="mt-2 small muted-soft">
+                For demo without Twilio, OTP prints in terminal.
+              </div>
+            </div>
+
+            <!-- OTP verification section inline. -->
+            <div id="otpSection" class="mt-4">
+              <h5 class="text-white mb-2">Verify OTP</h5>
+              <div class="muted-soft small mb-3">
+                OTP is sent to <strong id="otpPhoneLabel"></strong>
+              </div>
+
+              <div class="d-flex justify-content-center gap-2" id="otpInputs" style="flex-wrap:wrap;">
+                <!-- We keep 6 boxes for 6 digits. -->
+                <input class="otp-digit form-control text-center" inputmode="numeric" maxlength="1" style="width:56px;height:60px;border-radius:10px;" />
+                <input class="otp-digit form-control text-center" inputmode="numeric" maxlength="1" style="width:56px;height:60px;border-radius:10px;" />
+                <input class="otp-digit form-control text-center" inputmode="numeric" maxlength="1" style="width:56px;height:60px;border-radius:10px;" />
+                <input class="otp-digit form-control text-center" inputmode="numeric" maxlength="1" style="width:56px;height:60px;border-radius:10px;" />
+                <input class="otp-digit form-control text-center" inputmode="numeric" maxlength="1" style="width:56px;height:60px;border-radius:10px;" />
+                <input class="otp-digit form-control text-center" inputmode="numeric" maxlength="1" style="width:56px;height:60px;border-radius:10px;" />
+              </div>
+
+              <div class="text-center mt-3">
+                <div class="muted-soft small">
+                  OTP expires in <strong id="expiryCountdown">300</strong> seconds.
+                </div>
+              </div>
+
+              <div class="text-center mt-3">
+                <button id="verifyBtn" type="button" class="btn btn-primary" style="border-radius:12px; padding:10px 16px;">
+                  Verify
+                </button>
+              </div>
+
+              <div class="text-center mt-3">
+                <button id="resendBtn" type="button" class="btn btn-secondary" disabled style="border-radius:12px; padding:10px 16px;">
+                  Resend (<span id="resendCountdown">60</span>s)
+                </button>
+              </div>
+
+              <div class="mt-3 small" id="otpMsg" style="min-height: 18px; color: rgba(234, 242, 255, 0.9);"></div>
+            </div>
+
+            <!-- Link to go back to login. -->
+            <div class="text-center mt-4">
+              <a href="/login" class="text-decoration-none" style="color:#7bdcff; font-weight:700;">
+                Already have an account? Login
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // Helper: set message text in an element.
+      function setText(el, text) { el.textContent = text; }
+
+      // Collect inputs from the form.
+      const fullNameEl = document.getElementById("fullName");
+      const emailEl = document.getElementById("email");
+      const phoneEl = document.getElementById("phoneNumber");
+      const plateEl = document.getElementById("plateNumber");
+      const passwordEl = document.getElementById("password");
+
+      // Strength UI elements.
+      const strengthFill = document.getElementById("strengthFill");
+      const strengthText = document.getElementById("strengthText");
+
+      // Register message element.
+      const registerMsg = document.getElementById("registerMsg");
+
+      // OTP UI elements.
+      const otpSection = document.getElementById("otpSection");
+      const otpPhoneLabel = document.getElementById("otpPhoneLabel");
+      const otpInputs = Array.from(document.querySelectorAll("#otpInputs .otp-digit"));
+      const expiryCountdownEl = document.getElementById("expiryCountdown");
+      const verifyBtn = document.getElementById("verifyBtn");
+      const resendBtn = document.getElementById("resendBtn");
+      const resendCountdownEl = document.getElementById("resendCountdown");
+      const otpMsg = document.getElementById("otpMsg");
+
+      // We keep timers in variables so we can update them easily.
+      let secondsLeft = 300;
+      let resendSecondsLeft = 0;
+
+      // Update password strength based on simple rules (beginner-friendly).
+      function updatePasswordStrength() {
+        const pwd = passwordEl.value || "";
+
+        // Start with score 0 and increase for stronger patterns.
+        let score = 0;
+
+        // Length is important.
+        if (pwd.length >= 8) score += 1;
+        if (pwd.length >= 12) score += 1;
+
+        // Check variety: uppercase, lowercase, numbers, special chars.
+        if (/[a-z]/.test(pwd)) score += 1;
+        if (/[A-Z]/.test(pwd)) score += 1;
+        if (/[0-9]/.test(pwd)) score += 1;
+        if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
+
+        // Convert score to labels 0..6.
+        let percent = 0;
+        let label = "Weak";
+        let color = "#dc3545";
+
+        if (score <= 2) {
+          percent = 25;
+          label = "Weak";
+          color = "#dc3545";
+        } else if (score <= 3) {
+          percent = 45;
+          label = "Fair";
+          color = "#fd7e14";
+        } else if (score <= 4) {
+          percent = 65;
+          label = "Good";
+          color = "#ffc107";
+        } else {
+          percent = 90;
+          label = "Strong";
+          color = "#28a745";
+        }
+
+        // Update UI.
+        strengthFill.style.width = percent + "%";
+        strengthFill.style.background = color;
+        strengthText.textContent = "Password strength: " + label;
+      }
+
+      // Listen for password typing to update strength in real time.
+      passwordEl.addEventListener("input", updatePasswordStrength);
+      updatePasswordStrength();
+
+      // Move focus to next OTP input.
+      function moveToNext(index) {
+        if (index >= otpInputs.length - 1) return;
+        otpInputs[index + 1].focus();
+      }
+
+      // Move focus to previous OTP input on backspace.
+      function moveToPrev(index) {
+        if (index <= 0) return;
+        otpInputs[index - 1].focus();
+      }
+
+      // Set up digit-only behavior for OTP boxes.
+      otpInputs.forEach((input, index) => {
+        input.addEventListener("input", () => {
+          input.value = (input.value || "").replace(/[^0-9]/g, "").slice(0, 1);
+          if (input.value.length === 1) moveToNext(index);
+        });
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !input.value) {
+            moveToPrev(index);
+          }
+        });
+      });
+
+      // Collect OTP from 6 inputs.
+      function getOtpValue() {
+        return otpInputs.map(i => i.value).join("");
+      }
+
+      // Send OTP when user clicks Send OTP on register page.
+      document.getElementById("sendOtpBtn").addEventListener("click", async () => {
+        setText(registerMsg, "");
+        setText(otpMsg, "");
+
+        const phone = phoneEl.value.trim();
+        if (!phone) { setText(registerMsg, "Please enter your phone number."); return; }
+
+        try {
+          const res = await fetch("/auth/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone_number: phone })
+          });
+
+          const data = await res.json();
+
+          if (!data.success) {
+            setText(registerMsg, data.error || "Could not send OTP.");
+            return;
+          }
+
+          // Show OTP section after OTP is sent.
+          otpSection.style.display = "block";
+          otpPhoneLabel.textContent = phone;
+
+          // Reset OTP inputs.
+          otpInputs.forEach(i => i.value = "");
+          otpInputs[0].focus();
+
+          // Reset timers from backend.
+          secondsLeft = data.expiry_seconds || 300;
+          expiryCountdownEl.textContent = secondsLeft;
+
+          // Rate limit: resend button disabled for 60 seconds.
+          resendSecondsLeft = 60;
+          resendBtn.disabled = true;
+          resendCountdownEl.textContent = resendSecondsLeft;
+
+          setText(registerMsg, "OTP sent. Enter the code below.");
+
+        } catch (e) {
+          setText(registerMsg, "Server error while sending OTP.");
+        }
+      });
+
+      // Update expiry countdown every second.
+      setInterval(() => {
+        if (otpSection.style.display === "none") return;
+        if (secondsLeft > 0) {
+          secondsLeft -= 1;
+          expiryCountdownEl.textContent = secondsLeft;
+        }
+      }, 1000);
+
+      // Update resend cooldown every second.
+      setInterval(() => {
+        if (otpSection.style.display === "none") return;
+        if (resendSecondsLeft > 0) {
+          resendSecondsLeft -= 1;
+          resendCountdownEl.textContent = resendSecondsLeft;
+          resendBtn.disabled = true;
+        } else {
+          resendBtn.disabled = false;
+        }
+      }, 1000);
+
+      // Verify OTP and register.
+      verifyBtn.addEventListener("click", async () => {
+        setText(otpMsg, "");
+
+        if (secondsLeft <= 0) {
+          setText(otpMsg, "OTP expired. Please resend.");
+          return;
+        }
+
+        const otp = getOtpValue();
+        if (otp.length !== 6 || otpInputs.some(i => !i.value)) {
+          setText(otpMsg, "Please enter the 6-digit OTP.");
+          return;
+        }
+
+        // Prepare registration data to help backend create user properly.
+        const payload = {
+          phone_number: phoneEl.value.trim(),
+          otp,
+          full_name: fullNameEl.value.trim(),
+          email: emailEl.value.trim(),
+          password: passwordEl.value,
+          plate_number: plateEl.value.trim(),
+        };
+
+        try {
+          const res = await fetch("/auth/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+
+          if (!data.success) {
+            if (data.attempts_remaining !== undefined) {
+              setText(otpMsg, data.error + " Attempts left: " + data.attempts_remaining + ".");
+            } else {
+              setText(otpMsg, data.error || "Invalid OTP.");
+            }
+            return;
+          }
+
+          // On success, backend may return a redirect URL.
+          if (data.redirect) {
+            window.location.href = data.redirect;
+          } else {
+            setText(otpMsg, data.message || "OTP verified.");
+          }
+        } catch (e) {
+          setText(otpMsg, "Server error while verifying OTP.");
+        }
+      });
+
+      // Resend OTP from register page.
+      resendBtn.addEventListener("click", async () => {
+        setText(otpMsg, "");
+
+        if (resendSecondsLeft > 0) return;
+
+        try {
+          const res = await fetch("/auth/resend-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone_number: phoneEl.value.trim() })
+          });
+
+          const data = await res.json();
+
+          if (!data.success) {
+            setText(otpMsg, data.error || "Could not resend OTP.");
+            return;
+          }
+
+          // Reset OTP inputs.
+          otpInputs.forEach(i => i.value = "");
+          otpInputs[0].focus();
+
+          // Update timers based on backend.
+          secondsLeft = data.expiry_seconds || 300;
+          expiryCountdownEl.textContent = secondsLeft;
+
+          resendSecondsLeft = 60;
+          resendBtn.disabled = true;
+          resendCountdownEl.textContent = resendSecondsLeft;
+
+          setText(otpMsg, "OTP resent. Enter the new code.");
+        } catch (e) {
+          setText(otpMsg, "Server error while resending OTP.");
+        }
+      });
+
+      // Register with Google button is a normal link.
+      // No click handler is needed because the backend autofills fields using session.
+    </script>
+    <!-- Vehicle Registration Notice -->
+    <div style="max-width:500px; margin:0 auto 20px;
+                background:#16213e; border-radius:8px;
+                padding:12px; font-size:13px;
+                text-align:center; color:#aaa;">
+        📋 After registering your account, you can
+        <strong style="color:#2ecc71;">register your vehicle</strong>
+        from your dashboard.
+        <br>
+        <a href="/user/register_vehicle"
+           style="color:#f39c12; text-decoration:none; font-weight:600;">
+            🚗 Go to Vehicle Registration →
+        </a>
+    </div>
+  </body>
+</html>
+

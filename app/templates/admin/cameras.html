@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Cameras - I-STE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#0a0a0a; color:#fff; font-family:'Segoe UI',sans-serif; }
+        .sidebar { width:240px; min-height:100vh; background:#1a1a2e; position:fixed; left:0; top:0; padding:20px 0; border-right:1px solid #16213e; }
+        .sidebar-brand { text-align:center; padding:20px; border-bottom:1px solid #16213e; margin-bottom:10px; }
+        .sidebar a { display:block; padding:12px 24px; color:#aaa; text-decoration:none; transition:all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background:#16213e; color:#2ecc71; border-left:3px solid #2ecc71; }
+        .main-content { margin-left:240px; padding:30px; }
+        .navbar-top { background:#1a1a2e; padding:15px 30px; border-bottom:1px solid #16213e; margin-left:240px; }
+        .camera-card { background:#1a1a2e; border:1px solid #16213e; border-radius:12px; overflow:hidden; }
+        .camera-feed { width:100%; height:250px; background:#000; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+        .camera-feed img { width:100%; height:100%; object-fit:cover; }
+        .no-signal { display:flex; flex-direction:column; align-items:center; color:#444; }
+        .camera-off-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444; z-index:10; }
+        .lane-info { padding:10px 16px; background:#16213e; display:flex; justify-content:space-between; align-items:center; }
+        .density-bar { height:5px; width:100%; background:#222; }
+        .density-fill { height:100%; transition:width 0.5s, background 0.5s; border-radius:0 3px 3px 0; }
+        .ip-bar { padding:10px 14px; background:#0f0f1a; display:flex; gap:8px; align-items:center; border-top:1px solid #111; }
+        .control-bar { padding:8px 14px; background:#111; display:flex; gap:8px; align-items:center; justify-content:space-between; border-top:1px solid #1a1a2e; }
+        .ip-input { background:#1a1a2e; border:1px solid #333; color:#fff; border-radius:6px; padding:7px 10px; font-size:12px; flex:1; min-width:0; }
+        .ip-input:focus { border-color:#2ecc71; outline:none; }
+        .btn-sm-green  { background:#2ecc71; border:none; color:#000; padding:7px 14px; border-radius:6px; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; }
+        .btn-sm-green:hover  { background:#27ae60; }
+        .btn-sm-red    { background:#e74c3c; border:none; color:#fff; padding:7px 14px; border-radius:6px; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; }
+        .btn-sm-red:hover    { background:#c0392b; }
+        .btn-sm-gray   { background:#333; border:none; color:#aaa; padding:7px 14px; border-radius:6px; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; }
+        .btn-sm-gray:hover   { background:#444; }
+        .toggle-btn { width:52px; height:28px; border-radius:14px; border:none; cursor:pointer; position:relative; transition:background 0.3s; flex-shrink:0; }
+        .toggle-btn.on  { background:#2ecc71; }
+        .toggle-btn.off { background:#555; }
+        .toggle-knob { width:22px; height:22px; background:#fff; border-radius:50%; position:absolute; top:3px; transition:left 0.3s; }
+        .toggle-btn.on  .toggle-knob { left:27px; }
+        .toggle-btn.off .toggle-knob { left:3px; }
+        .signal-badge { padding:4px 12px; border-radius:20px; font-weight:600; font-size:12px; }
+        .signal-green  { background:#1a4a2a; color:#2ecc71; }
+        .signal-red    { background:#4a1a1a; color:#e74c3c; }
+        .signal-yellow { background:#4a3a1a; color:#f39c12; }
+        .density-label { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; }
+        .density-low    { background:#1a4a2a; color:#2ecc71; }
+        .density-medium { background:#4a3a1a; color:#f39c12; }
+        .density-high   { background:#4a1a1a; color:#e74c3c; }
+        .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+        .dot-live    { background:#2ecc71; box-shadow:0 0 6px #2ecc71; animation:pulse 1s infinite; }
+        .dot-offline { background:#555; }
+        .dot-off     { background:#e74c3c; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div style="font-size:28px;">🚦</div>
+        <div style="font-weight:700; color:#2ecc71;">I-STE</div>
+        <div style="font-size:11px; color:#666;">Admin Panel</div>
+    </div>
+    <a href="/admin/dashboard">🏠 Overview</a>
+    <a href="/admin/cameras" class="active">📹 Live Cameras</a>
+    <a href="/admin/signals">🚦 Signal Control</a>
+    <a href="/admin/emergency">🚨 Emergency</a>
+    <a href="/admin/violations">⚖️ Violations</a>
+    <a href="/admin/analytics">📊 Analytics</a>
+    <a href="/admin/documents">📄 Documents</a>
+    <a href="/admin/users">👥 Users</a>
+    <a href="/auth/logout" style="color:#e74c3c; margin-top:20px;">🚪 Logout</a>
+</div>
+
+<div class="navbar-top d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">📹 Live Camera Feeds</h5>
+    <div class="d-flex align-items-center gap-3">
+        <span style="color:#aaa; font-size:13px;" id="last-update">--</span>
+        <span style="color:#2ecc71;">👤 {{ current_user.full_name }}</span>
+    </div>
+</div>
+
+<div class="main-content">
+
+    <!-- 4 Camera Grid -->
+    <div class="row g-4 mb-4">
+        {% for lane in ['North','South','East','West'] %}
+        <div class="col-md-6">
+            <div class="camera-card">
+
+                <!-- Camera Feed Area -->
+                <div class="camera-feed" id="feed-box-{{ lane }}">
+
+                    <!-- Live stream image -->
+                    <img id="feed-img-{{ lane }}"
+                         src=""
+                         style="display:none; width:100%; height:100%; object-fit:cover;"
+                         onerror="onFeedError('{{ lane }}')">
+
+                    <!-- No Signal placeholder -->
+                    <div id="no-signal-{{ lane }}" class="no-signal">
+                        <div style="font-size:48px;">📷</div>
+                        <div style="margin-top:8px;">{{ lane }} — No Signal</div>
+                        <div style="font-size:11px; color:#333; margin-top:4px;">
+                            Enter IP below → Connect → Turn ON
+                        </div>
+                    </div>
+
+                    <!-- Camera OFF overlay -->
+                    <div id="cam-off-{{ lane }}" class="camera-off-overlay"
+                         style="display:none;">
+                        <div style="font-size:48px;">🔴</div>
+                        <div style="margin-top:8px; font-size:14px;">
+                            Camera OFF
+                        </div>
+                        <div style="font-size:11px; color:#333; margin-top:4px;">
+                            Toggle switch to turn ON
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Density Progress Bar -->
+                <div class="density-bar">
+                    <div class="density-fill" id="density-bar-{{ lane }}"
+                         style="width:0%; background:#2ecc71;"></div>
+                </div>
+
+                <!-- Lane Status Bar -->
+                <div class="lane-info">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="status-dot dot-offline"
+                              id="dot-{{ lane }}"></span>
+                        <span style="font-weight:600; font-size:14px;">
+                            {{ lane }} Lane
+                        </span>
+                        <span id="status-txt-{{ lane }}"
+                              style="color:#555; font-size:12px;">Offline</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="density-label density-low"
+                              id="density-{{ lane }}">Low</span>
+                        <span style="color:#aaa; font-size:12px;"
+                              id="count-{{ lane }}">0 vehicles</span>
+                        <span class="signal-badge signal-red"
+                              id="signal-{{ lane }}">RED</span>
+                    </div>
+                </div>
+
+                <!-- Green Time Bar -->
+                <div style="padding:5px 16px; background:#12121f;
+                            display:flex; justify-content:space-between;
+                            font-size:11px; color:#555;">
+                    <span>🕐 Green:
+                        <span id="green-time-{{ lane }}"
+                              style="color:#2ecc71; font-weight:700;">--</span>s
+                    </span>
+                    <span>Remaining:
+                        <span id="time-rem-{{ lane }}"
+                              style="color:#f39c12; font-weight:700;">--</span>s
+                    </span>
+                </div>
+
+                <!-- IP Entry Bar -->
+                <div class="ip-bar">
+                    <span style="color:#666; font-size:12px;
+                                 white-space:nowrap;">📱</span>
+                    <input type="text"
+                           class="ip-input"
+                           id="ip-{{ lane }}"
+                           placeholder="192.168.x.x:8080"
+                           onkeypress="if(event.key==='Enter') connectCamera('{{ lane }}')">
+                    <button class="btn-sm-green"
+                            id="btn-connect-{{ lane }}"
+                            onclick="connectCamera('{{ lane }}')">
+                        Connect
+                    </button>
+                    <button class="btn-sm-gray"
+                            id="btn-disconnect-{{ lane }}"
+                            style="display:none;"
+                            onclick="disconnectCamera('{{ lane }}')">
+                        Change
+                    </button>
+                </div>
+
+                <!-- Camera ON/OFF Control Bar -->
+                <div class="control-bar">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="font-size:13px; color:#aaa;">Camera</span>
+                        <!-- Toggle Switch -->
+                        <button class="toggle-btn off"
+                                id="toggle-{{ lane }}"
+                                onclick="toggleCamera('{{ lane }}')"
+                                title="Turn camera ON/OFF">
+                            <div class="toggle-knob"></div>
+                        </button>
+                        <span id="toggle-label-{{ lane }}"
+                              style="font-size:12px; color:#555;">OFF</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn-sm-gray"
+                                onclick="refreshCamera('{{ lane }}')"
+                                title="Refresh stream">
+                            🔄 Refresh
+                        </button>
+                        <button class="btn-sm-red"
+                                onclick="snapshotCamera('{{ lane }}')"
+                                title="Take snapshot">
+                            📸 Snap
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Signal Summary Panel -->
+    <div style="background:#1a1a2e; border:1px solid #16213e;
+                border-radius:12px; padding:20px;">
+        <h6 style="color:#2ecc71; margin-bottom:16px;">
+            🚦 Adaptive Signal Summary
+            <span style="color:#555; font-size:12px; font-weight:400; margin-left:8px;">
+                Auto-adjusts green time based on live vehicle density
+            </span>
+        </h6>
+        <div class="row g-3">
+            {% for lane in ['North','South','East','West'] %}
+            <div class="col-md-3">
+                <div style="background:#16213e; border-radius:10px;
+                            padding:16px; text-align:center;">
+                    <div style="font-size:13px; color:#aaa; margin-bottom:6px;">
+                        {{ lane }}
+                    </div>
+                    <div style="font-size:28px; font-weight:700;"
+                         id="sum-count-{{ lane }}">0</div>
+                    <div style="font-size:11px; color:#555;">vehicles</div>
+                    <div class="mt-2">
+                        <span class="signal-badge signal-red"
+                              id="sum-signal-{{ lane }}">RED</span>
+                    </div>
+                    <div style="font-size:11px; color:#555; margin-top:6px;">
+                        Green: <span id="sum-green-{{ lane }}"
+                                     style="color:#2ecc71;">--</span>s
+                    </div>
+                    <div class="mt-1">
+                        <span class="density-label density-low"
+                              id="sum-density-{{ lane }}">Low</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Snapshot Modal -->
+<div class="modal fade" id="snapModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content"
+             style="background:#1a1a2e; border:1px solid #16213e;">
+            <div class="modal-header" style="border-color:#16213e;">
+                <h6 class="modal-title" id="snap-title">Snapshot</h6>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="snap-img" src="" style="max-width:100%; border-radius:8px;">
+                <div class="mt-2" style="color:#aaa; font-size:12px;"
+                     id="snap-time"></div>
+            </div>
+            <div class="modal-footer" style="border-color:#16213e;">
+                <a id="snap-download" href="#" download="snapshot.jpg"
+                   class="btn btn-sm btn-success">⬇ Download</a>
+                <button class="btn btn-sm btn-secondary"
+                        data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ── Persist camera URLs across page navigations ──────────────
+const STORAGE_KEY = 'iste_camera_urls';
+
+function saveCameraUrls() {
+    const saved = {};
+    ['North','South','East','West'].forEach(lane => {
+        if (cameraState[lane].url) {
+            saved[lane] = {
+                url: cameraState[lane].url,
+                ip:  document.getElementById('ip-' + lane).value
+            };
+        }
+    });
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+}
+
+function loadSavedCameras() {
+    try {
+        const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}');
+        Object.keys(saved).forEach(lane => {
+            if (saved[lane].url) {
+                document.getElementById('ip-' + lane).value = saved[lane].ip || '';
+                cameraState[lane].url       = saved[lane].url;
+                cameraState[lane].connected = true;
+                // Auto reconnect
+                setTimeout(() => connectCamera(lane), 500);
+            }
+        });
+    } catch(e) {
+        console.log('No saved cameras:', e);
+    }
+}
+
+// Load saved cameras when page loads
+window.addEventListener('load', loadSavedCameras);
+// Camera state per lane
+const cameraState = {
+    North: { connected: false, on: false, url: '' },
+    South: { connected: false, on: false, url: '' },
+    East:  { connected: false, on: false, url: '' },
+    West:  { connected: false, on: false, url: '' },
+};
+
+// ── Connect Camera ──────────────────────────────────────────
+function connectCamera(lane) {
+    const ipVal = document.getElementById('ip-' + lane).value.trim();
+    if (!ipVal) { alert('Please enter an IP address first.'); return; }
+
+    let url = ipVal;
+    if (!url.startsWith('http')) url = 'http://' + url;
+    if (!url.endsWith('/video')) url = url.replace(/\/$/, '') + '/video';
+
+    cameraState[lane].url       = url;
+    cameraState[lane].connected = true;
+
+    // Update button state
+    document.getElementById('btn-connect-' + lane).style.display    = 'none';
+    document.getElementById('btn-disconnect-' + lane).style.display = 'block';
+
+    // Auto turn ON after connecting
+    turnOn(lane);
+
+    // Tell server
+    updateServer(lane, url);
+
+    saveCameraUrls();
+
+}
+
+// ── Disconnect / Change Camera ──────────────────────────────
+function disconnectCamera(lane) {
+    turnOff(lane);
+    cameraState[lane].connected = false;
+    cameraState[lane].url       = '';
+
+    document.getElementById('btn-connect-' + lane).style.display    = 'block';
+    document.getElementById('btn-disconnect-' + lane).style.display = 'none';
+    document.getElementById('ip-' + lane).value = '';
+
+    showNoSignal(lane);
+    updateServer(lane, '');
+    saveCameraUrls();
+}
+
+// ── Toggle ON/OFF ───────────────────────────────────────────
+function toggleCamera(lane) {
+    if (!cameraState[lane].connected) {
+        alert('Please connect a camera first by entering the IP address.');
+        return;
+    }
+    if (cameraState[lane].on) {
+        turnOff(lane);
+    } else {
+        turnOn(lane);
+    }
+}
+
+// ── Turn Camera ON ──────────────────────────────────────────
+function turnOn(lane) {
+    if (!cameraState[lane].url) return;
+
+    cameraState[lane].on = true;
+
+    // Update toggle
+    const toggle = document.getElementById('toggle-' + lane);
+    const label  = document.getElementById('toggle-label-' + lane);
+    toggle.className    = 'toggle-btn on';
+    label.textContent   = 'ON';
+    label.style.color   = '#2ecc71';
+
+    // Hide OFF overlay
+    document.getElementById('cam-off-' + lane).style.display = 'none';
+
+    // Show feed
+    const img   = document.getElementById('feed-img-' + lane);
+    const noSig = document.getElementById('no-signal-' + lane);
+    img.src           = cameraState[lane].url + '?' + Date.now();
+    img.style.display = 'block';
+    noSig.style.display = 'none';
+
+    // Update status
+    const dot       = document.getElementById('dot-' + lane);
+    const statusTxt = document.getElementById('status-txt-' + lane);
+    dot.className         = 'status-dot dot-live';
+    statusTxt.textContent = 'Live';
+    statusTxt.style.color = '#2ecc71';
+
+    img.onload = function() {
+        dot.className         = 'status-dot dot-live';
+        statusTxt.textContent = 'Live';
+    };
+    img.onerror = function() { onFeedError(lane); };
+}
+
+// ── Turn Camera OFF ─────────────────────────────────────────
+function turnOff(lane) {
+    cameraState[lane].on = false;
+
+    // Update toggle
+    const toggle = document.getElementById('toggle-' + lane);
+    const label  = document.getElementById('toggle-label-' + lane);
+    toggle.className  = 'toggle-btn off';
+    label.textContent = 'OFF';
+    label.style.color = '#555';
+
+    // Hide feed, show OFF overlay
+    const img = document.getElementById('feed-img-' + lane);
+    img.style.display = 'none';
+    img.src           = '';
+    document.getElementById('no-signal-' + lane).style.display = 'none';
+    document.getElementById('cam-off-' + lane).style.display   = 'flex';
+
+    // Update status
+    const dot       = document.getElementById('dot-' + lane);
+    const statusTxt = document.getElementById('status-txt-' + lane);
+    dot.className         = 'status-dot dot-off';
+    statusTxt.textContent = 'Camera OFF';
+    statusTxt.style.color = '#e74c3c';
+
+    // Reset density
+    updateDensityBar(lane, 0, 'Low');
+}
+
+// ── Refresh Stream ──────────────────────────────────────────
+function refreshCamera(lane) {
+    if (!cameraState[lane].connected) {
+        alert('No camera connected for ' + lane + ' lane.'); return;
+    }
+    if (!cameraState[lane].on) {
+        alert('Camera is OFF. Turn it ON first.'); return;
+    }
+    const img = document.getElementById('feed-img-' + lane);
+    img.src   = cameraState[lane].url + '?' + Date.now();
+
+    const statusTxt = document.getElementById('status-txt-' + lane);
+    statusTxt.textContent = 'Refreshing...';
+    statusTxt.style.color = '#f39c12';
+    setTimeout(() => {
+        statusTxt.textContent = 'Live';
+        statusTxt.style.color = '#2ecc71';
+    }, 2000);
+}
+
+// ── Snapshot ────────────────────────────────────────────────
+function snapshotCamera(lane) {
+    if (!cameraState[lane].connected || !cameraState[lane].on) {
+        alert('Camera must be connected and ON to take snapshot.'); return;
+    }
+    // Use shot.jpg endpoint for snapshot
+    const baseUrl = cameraState[lane].url.replace('/video', '');
+    const snapUrl = baseUrl + '/shot.jpg?' + Date.now();
+
+    document.getElementById('snap-title').textContent =
+        '📸 ' + lane + ' Lane Snapshot';
+    document.getElementById('snap-img').src         = snapUrl;
+    document.getElementById('snap-download').href   = snapUrl;
+    document.getElementById('snap-time').textContent =
+        'Captured at: ' + new Date().toLocaleString();
+
+    new bootstrap.Modal(document.getElementById('snapModal')).show();
+}
+
+// ── Show No Signal ──────────────────────────────────────────
+function showNoSignal(lane) {
+    document.getElementById('feed-img-' + lane).style.display  = 'none';
+    document.getElementById('no-signal-' + lane).style.display = 'flex';
+    document.getElementById('cam-off-' + lane).style.display   = 'none';
+    document.getElementById('dot-' + lane).className = 'status-dot dot-offline';
+    document.getElementById('status-txt-' + lane).textContent  = 'Offline';
+    document.getElementById('status-txt-' + lane).style.color  = '#555';
+}
+
+// ── Feed Error Handler ──────────────────────────────────────
+function onFeedError(lane) {
+    if (!cameraState[lane].on) return;
+    const dot       = document.getElementById('dot-' + lane);
+    const statusTxt = document.getElementById('status-txt-' + lane);
+    dot.className         = 'status-dot dot-offline';
+    statusTxt.textContent = 'Reconnecting...';
+    statusTxt.style.color = '#f39c12';
+
+    // Auto retry after 5s
+    setTimeout(() => {
+        if (cameraState[lane].on && cameraState[lane].url) {
+            const img = document.getElementById('feed-img-' + lane);
+            img.src   = cameraState[lane].url + '?' + Date.now();
+        }
+    }, 5000);
+}
+
+// ── Update Server with Camera URL ───────────────────────────
+function updateServer(lane, url) {
+    fetch('/api/update_camera', {
+        method:  'POST',
+        headers: {'Content-Type': 'application/json'},
+        body:    JSON.stringify({ lane: lane, url: url })
+    }).catch(e => console.log('Server update failed:', e));
+}
+
+// ── Density Bar ─────────────────────────────────────────────
+function updateDensityBar(lane, count, density) {
+    const bar   = document.getElementById('density-bar-' + lane);
+    const label = document.getElementById('density-' + lane);
+    const pct   = Math.min(100, (count / 15) * 100);
+    bar.style.width = pct + '%';
+
+    if (density === 'High') {
+        bar.style.background = '#e74c3c';
+        label.className      = 'density-label density-high';
+        label.textContent    = '🔴 High';
+    } else if (density === 'Medium') {
+        bar.style.background = '#f39c12';
+        label.className      = 'density-label density-medium';
+        label.textContent    = '🟡 Medium';
+    } else {
+        bar.style.background = '#2ecc71';
+        label.className      = 'density-label density-low';
+        label.textContent    = '🟢 Low';
+    }
+}
+
+// ── Green Time from Density ─────────────────────────────────
+function calcGreenTime(density) {
+    if (density === 'High')   return 50;
+    if (density === 'Medium') return 30;
+    return 15;
+}
+
+// ── Live Status Update every 2s ─────────────────────────────
+setInterval(function() {
+    fetch('/api/status')
+    .then(r => r.json())
+    .then(data => {
+        ['North','South','East','West'].forEach(lane => {
+            // Only update detection data if camera is ON
+            if (!cameraState[lane].on) return;
+
+            const count   = data.vehicle_counts[lane] || 0;
+            const signal  = data.signal_status[lane]?.color || 'RED';
+            const timeRem = data.signal_status[lane]?.time_remaining || 0;
+            const density = data.density_levels[lane] || 'Low';
+            const greenT  = calcGreenTime(density);
+
+            // Camera card updates
+            document.getElementById('count-' + lane).textContent =
+                count + ' vehicle' + (count !== 1 ? 's' : '');
+
+            const sigEl = document.getElementById('signal-' + lane);
+            sigEl.textContent = signal;
+            sigEl.className   = 'signal-badge signal-' + signal.toLowerCase();
+
+            document.getElementById('green-time-' + lane).textContent = greenT;
+            document.getElementById('time-rem-' + lane).textContent   = timeRem;
+            updateDensityBar(lane, count, density);
+
+            // Summary panel updates
+            document.getElementById('sum-count-' + lane).textContent = count;
+            const sumSig = document.getElementById('sum-signal-' + lane);
+            sumSig.textContent = signal;
+            sumSig.className   = 'signal-badge signal-' + signal.toLowerCase();
+            document.getElementById('sum-green-' + lane).textContent = greenT;
+
+            const sumDen = document.getElementById('sum-density-' + lane);
+            sumDen.textContent = density;
+            sumDen.className   = 'density-label density-' + density.toLowerCase();
+        });
+
+        document.getElementById('last-update').textContent =
+            '🕐 ' + data.timestamp;
+    })
+    .catch(e => console.log('Status error:', e));
+}, 2000);
+
+// ── Auto Reconnect every 30s ────────────────────────────────
+setInterval(function() {
+    ['North','South','East','West'].forEach(lane => {
+        if (cameraState[lane].on && cameraState[lane].url) {
+            const img = document.getElementById('feed-img-' + lane);
+            if (img && img.naturalWidth === 0) {
+                console.log('Auto-reconnecting ' + lane);
+                img.src = cameraState[lane].url + '?' + Date.now();
+            }
+        }
+    });
+}, 30000);
+</script>
+</body>
+</html>

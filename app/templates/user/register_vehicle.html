@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Registration - I-STE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --accent:  #00c853;
+            --accent2: #0091ea;
+            --surface: #16213e;
+            --border:  #0f3460;
+            --text:    #e0e0e0;
+            --muted:   #888;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--primary);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ── Header ─────────────────────────────────────── */
+        .reg-header {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-bottom: 2px solid var(--accent);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .reg-header .brand {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 2px;
+        }
+        .reg-header .subtitle {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* ── Progress Steps ──────────────────────────────── */
+        .progress-bar-custom {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            transition: all 0.3s;
+        }
+        .step.active .step-circle {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #000;
+        }
+        .step.done .step-circle {
+            border-color: var(--accent);
+            background: transparent;
+            color: var(--accent);
+        }
+        .step-label {
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+        .step.active .step-label { color: var(--accent); font-weight: 600; }
+        .step-line {
+            width: 60px;
+            height: 2px;
+            background: var(--border);
+            margin: 0 8px;
+        }
+
+        /* ── Main Container ──────────────────────────────── */
+        .reg-container {
+            max-width: 860px;
+            margin: 40px auto;
+            padding: 0 20px 60px;
+        }
+
+        /* ── Section Cards ───────────────────────────────── */
+        .reg-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            display: none;
+        }
+        .reg-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+        .section-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-desc {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* ── Form Fields ─────────────────────────────────── */
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .form-label .required { color: #e74c3c; }
+        .form-control, .form-select {
+            background: #0d1b2e;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 12px 16px;
+            font-size: 14px;
+            width: 100%;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .form-control:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0,200,83,0.15);
+            background: #0d1b2e;
+            color: var(--text);
+        }
+        .form-control::placeholder { color: #444; }
+        .form-select option { background: #0d1b2e; }
+
+        /* ── File Upload ─────────────────────────────────── */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(0,200,83,0.05);
+        }
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .upload-icon { font-size: 32px; margin-bottom: 8px; }
+        .upload-text { font-size: 13px; color: var(--muted); }
+        .upload-text strong { color: var(--accent); }
+        .upload-preview {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            background: rgba(0,200,83,0.1);
+            border-radius: 6px;
+            padding: 8px 12px;
+        }
+        .upload-preview.show { display: flex; }
+        .upload-preview .file-name {
+            font-size: 13px;
+            color: var(--accent);
+            flex: 1;
+        }
+
+        /* ── Navigation Buttons ──────────────────────────── */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+        .btn-prev {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-prev:hover { border-color: var(--muted); color: var(--text); }
+        .btn-next {
+            background: var(--accent);
+            border: none;
+            color: #000;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 1px;
+        }
+        .btn-next:hover { background: #00e676; transform: translateY(-1px); }
+        .btn-submit {
+            background: linear-gradient(135deg, var(--accent), #00e676);
+            border: none;
+            color: #000;
+            padding: 14px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,200,83,0.3); }
+
+        /* ── Alert ───────────────────────────────────────── */
+        .alert-custom {
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .alert-danger  { background: rgba(231,76,60,0.15);  border: 1px solid #e74c3c; color: #e74c3c; }
+        .alert-success { background: rgba(0,200,83,0.15);   border: 1px solid var(--accent); color: var(--accent); }
+        .alert-info    { background: rgba(0,145,234,0.15);  border: 1px solid var(--accent2); color: var(--accent2); }
+
+        /* ── Info Box ────────────────────────────────────── */
+        .info-box {
+            background: rgba(0,145,234,0.08);
+            border: 1px solid rgba(0,145,234,0.3);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #90caf9;
+        }
+        .info-box ul { padding-left: 18px; margin: 8px 0 0; }
+        .info-box li { margin-bottom: 4px; }
+
+        /* ── Summary Card ────────────────────────────────── */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .summary-item {
+            background: #0d1b2e;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .summary-item .s-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .summary-item .s-value {
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        /* ── Responsive ──────────────────────────────────── */
+        @media (max-width: 600px) {
+            .reg-header { padding: 16px 20px; }
+            .reg-container { padding: 0 12px 40px; }
+            .reg-section { padding: 20px; }
+            .summary-grid { grid-template-columns: 1fr; }
+            .step-line { width: 30px; }
+            .step-label { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="reg-header">
+    <div>
+        <div class="brand">🚦 I-STE</div>
+        <div class="subtitle">Intelligent Smart Traffic Engineering System</div>
+    </div>
+    <div style="text-align:right;">
+        <div style="font-size:13px; color:var(--muted);">Logged in as</div>
+        <div style="font-size:14px; color:var(--accent); font-weight:600;">
+            {{ current_user.full_name }}
+        </div>
+        <a href="/user/dashboard" style="font-size:12px; color:var(--muted); text-decoration:none;">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Progress Steps -->
+<div class="progress-bar-custom">
+    <div class="step active" id="step-indicator-1">
+        <div class="step-circle">1</div>
+        <div class="step-label">Driver Info</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step-indicator-2">
+        <div class="step-circle">2</div>
+        <div class="step-label">Vehicle Info</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step-indicator-3">
+        <div class="step-circle">3</div>
+        <div class="step-label">Documents</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step-indicator-4">
+        <div class="step-circle">4</div>
+        <div class="step-label">Review</div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="reg-container">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert-custom alert-{{ category }}">
+            {% if category == 'danger' %}⚠️{% elif category == 'success' %}✅{% else %}ℹ️{% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="/user/register_vehicle"
+          enctype="multipart/form-data" id="reg-form">
+
+        <!-- ── STEP 1: Driver Information ─────────────────── -->
+        <div class="reg-section active" id="section-1">
+            <div class="section-title">👤 Driver Information</div>
+            <div class="section-desc">
+                Personal details as per government ID proof.
+                This information will be verified against your Aadhaar/PAN.
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Full Name <span class="required">*</span>
+                        </label>
+                        <input type="text" name="full_name" class="form-control"
+                               placeholder="As per Aadhaar card"
+                               value="{{ current_user.full_name }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Date of Birth <span class="required">*</span>
+                        </label>
+                        <input type="date" name="dob" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Mobile Number <span class="required">*</span>
+                        </label>
+                        <input type="tel" name="phone" class="form-control"
+                               placeholder="+91 XXXXXXXXXX"
+                               value="{{ current_user.phone_number or '' }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Email Address <span class="required">*</span>
+                        </label>
+                        <input type="email" name="email" class="form-control"
+                               value="{{ current_user.email }}" readonly
+                               style="opacity:0.6; cursor:not-allowed;">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Gender <span class="required">*</span></label>
+                        <select name="gender" class="form-select" required>
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Blood Group</label>
+                        <select name="blood_group" class="form-select">
+                            <option value="">Select</option>
+                            <option>A+</option><option>A-</option>
+                            <option>B+</option><option>B-</option>
+                            <option>O+</option><option>O-</option>
+                            <option>AB+</option><option>AB-</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Aadhaar Number</label>
+                        <input type="text" name="aadhaar" class="form-control"
+                               placeholder="XXXX XXXX XXXX" maxlength="14">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Full Address <span class="required">*</span>
+                        </label>
+                        <input type="text" name="address" class="form-control"
+                               placeholder="House No, Street, Locality" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">City <span class="required">*</span></label>
+                        <input type="text" name="city" class="form-control"
+                               placeholder="City" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">State <span class="required">*</span></label>
+                        <select name="state" class="form-select" required>
+                            <option value="">Select State</option>
+                            <option>Maharashtra</option>
+                            <option>Delhi</option>
+                            <option>Karnataka</option>
+                            <option>Tamil Nadu</option>
+                            <option>Gujarat</option>
+                            <option>Rajasthan</option>
+                            <option>Uttar Pradesh</option>
+                            <option>Madhya Pradesh</option>
+                            <option>West Bengal</option>
+                            <option>Andhra Pradesh</option>
+                            <option>Telangana</option>
+                            <option>Kerala</option>
+                            <option>Haryana</option>
+                            <option>Punjab</option>
+                            <option>Bihar</option>
+                            <option>Goa</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">PIN Code <span class="required">*</span></label>
+                        <input type="text" name="pincode" class="form-control"
+                               placeholder="6-digit PIN" maxlength="6" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Driving License Number <span class="required">*</span>
+                        </label>
+                        <input type="text" name="license_number" class="form-control"
+                               placeholder="MH-1234567890123" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            License Expiry Date <span class="required">*</span>
+                        </label>
+                        <input type="date" name="license_expiry" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <div></div>
+                <button type="button" class="btn-next" onclick="nextStep(1)">
+                    Next: Vehicle Info →
+                </button>
+            </div>
+        </div>
+
+        <!-- ── STEP 2: Vehicle Information ────────────────── -->
+        <div class="reg-section" id="section-2">
+            <div class="section-title">🚗 Vehicle Information</div>
+            <div class="section-desc">
+                Vehicle details as per Registration Certificate (RC book).
+                All fields must match exactly with your RC document.
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Vehicle Registration Number <span class="required">*</span>
+                        </label>
+                        <input type="text" name="plate_number" class="form-control"
+                               placeholder="MH12AB1234"
+                               style="text-transform:uppercase; letter-spacing:2px;
+                                      font-weight:700; font-size:16px;"
+                               required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Vehicle Type <span class="required">*</span>
+                        </label>
+                        <select name="vehicle_type" class="form-select" required>
+                            <option value="">Select Type</option>
+                            <option value="car">Car / SUV</option>
+                            <option value="bike">Two Wheeler (Bike/Scooter)</option>
+                            <option value="truck">Truck / Heavy Vehicle</option>
+                            <option value="auto">Auto Rickshaw</option>
+                            <option value="bus">Bus / Minibus</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Make / Brand <span class="required">*</span>
+                        </label>
+                        <input type="text" name="vehicle_make" class="form-control"
+                               placeholder="e.g. Honda, Maruti, Tata" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Model <span class="required">*</span>
+                        </label>
+                        <input type="text" name="vehicle_model" class="form-control"
+                               placeholder="e.g. City, Swift, Nexon" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Color</label>
+                        <input type="text" name="vehicle_color" class="form-control"
+                               placeholder="e.g. White, Silver, Red">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Year of Manufacture</label>
+                        <input type="number" name="year_of_mfg" class="form-control"
+                               placeholder="e.g. 2020" min="1990" max="2026">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Fuel Type</label>
+                        <select name="fuel_type" class="form-select">
+                            <option value="Petrol">Petrol</option>
+                            <option value="Diesel">Diesel</option>
+                            <option value="CNG">CNG</option>
+                            <option value="Electric">Electric</option>
+                            <option value="Hybrid">Hybrid</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Engine Number</label>
+                        <input type="text" name="engine_number" class="form-control"
+                               placeholder="As per RC book">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="form-label">Chassis Number</label>
+                        <input type="text" name="chassis_number" class="form-control"
+                               placeholder="17-character VIN number">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">
+                            RC Expiry Date <span class="required">*</span>
+                        </label>
+                        <input type="date" name="rc_expiry" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Insurance Expiry <span class="required">*</span>
+                        </label>
+                        <input type="date" name="insurance_expiry" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">
+                            PUC Expiry Date <span class="required">*</span>
+                        </label>
+                        <input type="date" name="puc_expiry" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button type="button" class="btn-prev" onclick="prevStep(2)">
+                    ← Back
+                </button>
+                <button type="button" class="btn-next" onclick="nextStep(2)">
+                    Next: Upload Documents →
+                </button>
+            </div>
+        </div>
+
+        <!-- ── STEP 3: Document Uploads ───────────────────── -->
+        <div class="reg-section" id="section-3">
+            <div class="section-title">📄 Document Upload</div>
+            <div class="section-desc">
+                Upload scanned copies or clear photos of your documents.
+                Accepted formats: PDF, JPG, PNG (max 5MB each)
+            </div>
+
+            <div class="info-box">
+                ℹ️ <strong>Required Documents:</strong>
+                <ul>
+                    <li>Registration Certificate (RC Book)</li>
+                    <li>Valid Insurance Policy</li>
+                    <li>PUC Certificate (Pollution Under Control)</li>
+                    <li>Driving License</li>
+                </ul>
+            </div>
+
+            <div class="row g-4">
+                <!-- RC Document -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            RC Book / Registration Certificate <span class="required">*</span>
+                        </label>
+                        <div class="upload-zone" id="zone-rc">
+                            <input type="file" name="rc_document"
+                                   accept=".pdf,.jpg,.jpeg,.png"
+                                   onchange="showPreview(this, 'preview-rc', 'zone-rc')">
+                            <div class="upload-icon">📋</div>
+                            <div class="upload-text">
+                                <strong>Click to upload</strong> or drag & drop<br>
+                                PDF, JPG, PNG — max 5MB
+                            </div>
+                        </div>
+                        <div class="upload-preview" id="preview-rc">
+                            <span>📄</span>
+                            <span class="file-name" id="fname-rc">-</span>
+                            <span style="color:var(--accent);">✓</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Insurance -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Insurance Policy Document <span class="required">*</span>
+                        </label>
+                        <div class="upload-zone" id="zone-ins">
+                            <input type="file" name="insurance_document"
+                                   accept=".pdf,.jpg,.jpeg,.png"
+                                   onchange="showPreview(this, 'preview-ins', 'zone-ins')">
+                            <div class="upload-icon">🛡️</div>
+                            <div class="upload-text">
+                                <strong>Click to upload</strong> or drag & drop<br>
+                                PDF, JPG, PNG — max 5MB
+                            </div>
+                        </div>
+                        <div class="upload-preview" id="preview-ins">
+                            <span>📄</span>
+                            <span class="file-name" id="fname-ins">-</span>
+                            <span style="color:var(--accent);">✓</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PUC -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            PUC Certificate <span class="required">*</span>
+                        </label>
+                        <div class="upload-zone" id="zone-puc">
+                            <input type="file" name="puc_document"
+                                   accept=".pdf,.jpg,.jpeg,.png"
+                                   onchange="showPreview(this, 'preview-puc', 'zone-puc')">
+                            <div class="upload-icon">🌿</div>
+                            <div class="upload-text">
+                                <strong>Click to upload</strong> or drag & drop<br>
+                                PDF, JPG, PNG — max 5MB
+                            </div>
+                        </div>
+                        <div class="upload-preview" id="preview-puc">
+                            <span>📄</span>
+                            <span class="file-name" id="fname-puc">-</span>
+                            <span style="color:var(--accent);">✓</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Driving License -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Driving License <span class="required">*</span>
+                        </label>
+                        <div class="upload-zone" id="zone-dl">
+                            <input type="file" name="license_document"
+                                   accept=".pdf,.jpg,.jpeg,.png"
+                                   onchange="showPreview(this, 'preview-dl', 'zone-dl')">
+                            <div class="upload-icon">🪪</div>
+                            <div class="upload-text">
+                                <strong>Click to upload</strong> or drag & drop<br>
+                                PDF, JPG, PNG — max 5MB
+                            </div>
+                        </div>
+                        <div class="upload-preview" id="preview-dl">
+                            <span>📄</span>
+                            <span class="file-name" id="fname-dl">-</span>
+                            <span style="color:var(--accent);">✓</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button type="button" class="btn-prev" onclick="prevStep(3)">
+                    ← Back
+                </button>
+                <button type="button" class="btn-next" onclick="nextStep(3)">
+                    Next: Review →
+                </button>
+            </div>
+        </div>
+
+        <!-- ── STEP 4: Review & Submit ─────────────────────── -->
+        <div class="reg-section" id="section-4">
+            <div class="section-title">✅ Review & Submit</div>
+            <div class="section-desc">
+                Please review all details before submitting.
+                Your registration will be verified by RTO within 2-3 working days.
+            </div>
+
+            <div id="review-content">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <div class="info-box" style="margin-top:20px;">
+                🔒 By submitting this form, you confirm that all details provided
+                are accurate and match your official documents. False information
+                may result in rejection and legal action.
+            </div>
+
+            <div class="nav-buttons">
+                <button type="button" class="btn-prev" onclick="prevStep(4)">
+                    ← Back
+                </button>
+                <button type="submit" class="btn-submit" id="submit-btn">
+                    🚀 Submit Registration
+                </button>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let currentStep = 1;
+const totalSteps = 4;
+
+// ── Step Navigation ───────────────────────────────────────────
+function nextStep(from) {
+    if (!validateStep(from)) return;
+    if (from === 3 && !validateDocuments()) return;
+    goToStep(from + 1);
+    if (from + 1 === 4) buildReview();
+}
+
+function validateDocuments() {
+    const required = [
+        { id: 'zone-rc',  name: 'RC Book / Registration Certificate' },
+        { id: 'zone-ins', name: 'Insurance Policy Document' },
+        { id: 'zone-puc', name: 'PUC Certificate' },
+        { id: 'zone-dl',  name: 'Driving License' },
+    ];
+
+    let allUploaded = true;
+    let missing = [];
+
+    required.forEach(doc => {
+        const zone  = document.getElementById(doc.id);
+        const input = zone.querySelector('input[type="file"]');
+        if (!input.files || !input.files[0]) {
+            zone.style.borderColor = '#e74c3c';
+            missing.push(doc.name);
+            allUploaded = false;
+        } else {
+            zone.style.borderColor = 'var(--accent)';
+        }
+    });
+
+    if (!allUploaded) {
+        alert(
+            '⚠️ Please upload ALL required documents:\n\n' +
+            missing.map(m => '• ' + m).join('\n') +
+            '\n\nAll 4 documents are mandatory for registration.'
+        );
+    }
+    return allUploaded;
+}
+
+function prevStep(from) {
+    goToStep(from - 1);
+}
+
+function goToStep(step) {
+    // Hide all sections
+    document.querySelectorAll('.reg-section').forEach(s => {
+        s.classList.remove('active');
+    });
+    // Show target section
+    document.getElementById('section-' + step).classList.add('active');
+
+    // Update progress indicators
+    for (let i = 1; i <= totalSteps; i++) {
+        const ind = document.getElementById('step-indicator-' + i);
+        ind.classList.remove('active', 'done');
+        if (i < step)  ind.classList.add('done');
+        if (i === step) ind.classList.add('active');
+    }
+
+    currentStep = step;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Validation ────────────────────────────────────────────────
+function validateStep(step) {
+    const section = document.getElementById('section-' + step);
+    const required = section.querySelectorAll('[required]');
+    let valid = true;
+
+    required.forEach(field => {
+        field.style.borderColor = '';
+        if (!field.value.trim()) {
+            field.style.borderColor = '#e74c3c';
+            field.focus();
+            valid = false;
+        }
+    });
+
+    if (!valid) {
+        alert('⚠️ Please fill all required fields before proceeding.');
+    }
+    return valid;
+}
+
+// ── File Upload Preview ───────────────────────────────────────
+function showPreview(input, previewId, zoneId) {
+    const preview  = document.getElementById(previewId);
+    const fnameId  = previewId.replace('preview-', 'fname-');
+    const fname    = document.getElementById(fnameId);
+    const zone     = document.getElementById(zoneId);
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        // Check file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('⚠️ File size must be under 5MB');
+            input.value = '';
+            return;
+        }
+        fname.textContent   = file.name;
+        preview.classList.add('show');
+        zone.style.borderColor = 'var(--accent)';
+        zone.style.background  = 'rgba(0,200,83,0.05)';
+    }
+}
+
+// Drag and drop
+document.querySelectorAll('.upload-zone').forEach(zone => {
+    zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', () => {
+        zone.classList.remove('drag-over');
+    });
+    zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const input = zone.querySelector('input[type="file"]');
+        if (e.dataTransfer.files.length) {
+            input.files = e.dataTransfer.files;
+            input.dispatchEvent(new Event('change'));
+        }
+    });
+});
+
+// ── Build Review Summary ──────────────────────────────────────
+function buildReview() {
+    const f   = document.getElementById('reg-form');
+    const get = name => f.querySelector(`[name="${name}"]`)?.value || '-';
+
+    const html = `
+        <div style="margin-bottom:20px;">
+            <div style="font-size:13px;font-weight:600;color:var(--muted);
+                        text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">
+                👤 Driver Details
+            </div>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="s-label">Full Name</div>
+                    <div class="s-value">${get('full_name')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Date of Birth</div>
+                    <div class="s-value">${get('dob')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Mobile</div>
+                    <div class="s-value">${get('phone')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">License Number</div>
+                    <div class="s-value">${get('license_number')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Address</div>
+                    <div class="s-value">${get('address')}, ${get('city')}, ${get('state')} - ${get('pincode')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Blood Group</div>
+                    <div class="s-value">${get('blood_group')}</div>
+                </div>
+            </div>
+        </div>
+        <div style="margin-bottom:20px;">
+            <div style="font-size:13px;font-weight:600;color:var(--muted);
+                        text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">
+                🚗 Vehicle Details
+            </div>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="s-label">Registration Number</div>
+                    <div class="s-value" style="font-size:18px;font-weight:700;
+                                                color:var(--accent);letter-spacing:2px;">
+                        ${get('plate_number').toUpperCase()}
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Vehicle Type</div>
+                    <div class="s-value">${get('vehicle_type')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Make & Model</div>
+                    <div class="s-value">${get('vehicle_make')} ${get('vehicle_model')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Year / Fuel</div>
+                    <div class="s-value">${get('year_of_mfg')} / ${get('fuel_type')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">RC Expiry</div>
+                    <div class="s-value">${get('rc_expiry')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Insurance Expiry</div>
+                    <div class="s-value">${get('insurance_expiry')}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">PUC Expiry</div>
+                    <div class="s-value">${get('puc_expiry')}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('review-content').innerHTML = html;
+}
+
+// ── Submit Button Loading State ───────────────────────────────
+document.getElementById('reg-form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    btn.textContent = '⏳ Submitting...';
+    btn.disabled    = true;
+});
+</script>
+</body>
+</html>

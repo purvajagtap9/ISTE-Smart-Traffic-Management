@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal Control - I-STE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#0a0a0a; color:#fff; font-family:'Segoe UI',sans-serif; }
+        .sidebar { width:240px; min-height:100vh; background:#1a1a2e; position:fixed; left:0; top:0; padding:20px 0; border-right:1px solid #16213e; }
+        .sidebar-brand { text-align:center; padding:20px; border-bottom:1px solid #16213e; margin-bottom:10px; }
+        .sidebar a { display:block; padding:12px 24px; color:#aaa; text-decoration:none; transition:all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background:#16213e; color:#2ecc71; border-left:3px solid #2ecc71; }
+        .main-content { margin-left:240px; padding:30px; }
+        .navbar-top { background:#1a1a2e; padding:15px 30px; border-bottom:1px solid #16213e; margin-left:240px; display:flex; justify-content:space-between; align-items:center; }
+        .signal-card { background:#1a1a2e; border:1px solid #16213e; border-radius:12px; padding:24px; text-align:center; }
+        /* Traffic Light */
+        .traffic-light { width:70px; height:180px; background:#111; border-radius:35px; display:flex; flex-direction:column; align-items:center; justify-content:space-around; padding:12px; margin:0 auto 16px; border:2px solid #222; box-shadow:0 4px 20px rgba(0,0,0,0.5); }
+        .light { width:44px; height:44px; border-radius:50%; opacity:0.15; transition:opacity 0.3s, box-shadow 0.3s; }
+        .light-red    { background:#e74c3c; }
+        .light-yellow { background:#f39c12; }
+        .light-green  { background:#2ecc71; }
+        .light.active-red    { opacity:1; box-shadow:0 0 20px #e74c3c, 0 0 40px #e74c3c; }
+        .light.active-yellow { opacity:1; box-shadow:0 0 20px #f39c12, 0 0 40px #f39c12; animation:blink 0.5s infinite; }
+        .light.active-green  { opacity:1; box-shadow:0 0 20px #2ecc71, 0 0 40px #2ecc71; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+        /* Countdown Ring */
+        .countdown-ring { position:relative; width:80px; height:80px; margin:0 auto 12px; }
+        .countdown-ring svg { transform:rotate(-90deg); }
+        .ring-bg { fill:none; stroke:#222; stroke-width:6; }
+        .ring-fill { fill:none; stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke 0.3s; }
+        .countdown-number { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:20px; font-weight:700; }
+        /* Mode Badge */
+        .mode-badge { font-size:11px; padding:3px 10px; border-radius:10px; font-weight:600; }
+        .mode-auto   { background:#1a4a2a; color:#2ecc71; }
+        .mode-manual { background:#4a3a1a; color:#f39c12; }
+        /* Density Bar */
+        .density-mini { height:6px; border-radius:3px; margin:8px 0; transition:width 0.5s; }
+        /* Signal Summary Bar */
+        .signal-bar { background:#1a1a2e; border:1px solid #16213e; border-radius:12px; padding:16px 24px; margin-bottom:24px; display:flex; justify-content:space-around; align-items:center; }
+        .signal-bar-lane { text-align:center; }
+        .signal-dot-lg { width:20px; height:20px; border-radius:50%; display:inline-block; margin-bottom:4px; }
+        .dot-green-lg  { background:#2ecc71; box-shadow:0 0 10px #2ecc71; }
+        .dot-yellow-lg { background:#f39c12; box-shadow:0 0 10px #f39c12; animation:blink 0.5s infinite; }
+        .dot-red-lg    { background:#e74c3c; }
+        /* Manual Override */
+        .form-range::-webkit-slider-thumb { background:#2ecc71; }
+        .override-section { background:#111; border-radius:10px; padding:16px; margin-top:12px; border:1px solid #1a1a2e; }
+        label { color:#888; font-size:12px; }
+        .btn-green { background:#2ecc71; border:none; color:#000; font-weight:700; border-radius:8px; padding:8px 16px; cursor:pointer; width:100%; }
+        .btn-green:hover { background:#27ae60; }
+        .btn-gray  { background:#333; border:none; color:#aaa; font-weight:700; border-radius:8px; padding:8px 16px; cursor:pointer; width:100%; }
+        .btn-gray:hover { background:#444; color:#fff; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div style="font-size:28px;">🚦</div>
+        <div style="font-weight:700; color:#2ecc71;">I-STE</div>
+        <div style="font-size:11px; color:#666;">Admin Panel</div>
+    </div>
+    <a href="/admin/dashboard">🏠 Overview</a>
+    <a href="/admin/cameras">📹 Live Cameras</a>
+    <a href="/admin/signals" class="active">🚦 Signal Control</a>
+    <a href="/admin/emergency">🚨 Emergency</a>
+    <a href="/admin/violations">⚖️ Violations</a>
+    <a href="/admin/analytics">📊 Analytics</a>
+    <a href="/admin/documents">📄 Documents</a>
+    <a href="/admin/users">👥 Users</a>
+    <a href="/auth/logout" style="color:#e74c3c; margin-top:20px;">🚪 Logout</a>
+</div>
+
+<div class="navbar-top">
+    <h5 class="mb-0">🚦 Adaptive Signal Control</h5>
+    <div class="d-flex align-items-center gap-3">
+        <span id="mode-indicator" class="mode-badge mode-auto">AUTO MODE</span>
+        <span style="color:#aaa; font-size:13px;" id="last-update">--</span>
+        <span style="color:#2ecc71;">👤 {{ current_user.full_name }}</span>
+    </div>
+</div>
+
+<div class="main-content">
+
+    <!-- Live Signal Summary Bar -->
+    <div class="signal-bar mb-4">
+        {% for lane in ['North','South','East','West'] %}
+        <div class="signal-bar-lane">
+            <div class="signal-dot-lg dot-red-lg" id="bar-dot-{{ lane }}"></div>
+            <div style="font-weight:600; font-size:14px;">{{ lane }}</div>
+            <div style="font-size:11px; color:#aaa;" id="bar-signal-{{ lane }}">RED</div>
+            <div style="font-size:11px; color:#666;" id="bar-count-{{ lane }}">0 vehicles</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 4 Traffic Light Cards -->
+    <div class="row g-4 mb-4">
+        {% for lane in ['North','South','East','West'] %}
+        <div class="col-md-3">
+            <div class="signal-card">
+
+                <!-- Lane Header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">{{ lane }}</h6>
+                    <span class="mode-badge mode-auto" id="mode-{{ lane }}">AUTO</span>
+                </div>
+
+                <!-- Traffic Light -->
+                <div class="traffic-light">
+                    <div class="light light-red"    id="light-red-{{ lane }}"></div>
+                    <div class="light light-yellow" id="light-yellow-{{ lane }}"></div>
+                    <div class="light light-green"  id="light-green-{{ lane }}"></div>
+                </div>
+
+                <!-- Countdown Ring -->
+                <div class="countdown-ring">
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                        <circle class="ring-bg"   cx="40" cy="40" r="34"/>
+                        <circle class="ring-fill" cx="40" cy="40" r="34"
+                                id="ring-{{ lane }}"
+                                stroke="#e74c3c"
+                                stroke-dasharray="214"
+                                stroke-dashoffset="214"/>
+                    </svg>
+                    <div class="countdown-number" id="countdown-{{ lane }}">--</div>
+                </div>
+
+                <!-- Signal Label -->
+                <div style="font-size:18px; font-weight:700; margin-bottom:8px;"
+                     id="signal-label-{{ lane }}">RED</div>
+
+                <!-- Density Info -->
+                <div style="font-size:12px; color:#666; margin-bottom:4px;">
+                    Vehicles: <span id="vehicle-count-{{ lane }}"
+                                    style="color:#fff; font-weight:600;">0</span>
+                    | Density: <span id="density-txt-{{ lane }}"
+                                     style="color:#2ecc71;">Low</span>
+                </div>
+
+                <!-- Density Bar -->
+                <div style="background:#222; border-radius:3px; height:6px; margin:8px 0;">
+                    <div class="density-mini" id="density-bar-{{ lane }}"
+                         style="width:0%; background:#2ecc71; height:6px;"></div>
+                </div>
+
+                <!-- Green Time -->
+                <div style="font-size:12px; color:#555; margin-bottom:12px;">
+                    Allocated green:
+                    <span id="green-alloc-{{ lane }}"
+                          style="color:#2ecc71; font-weight:600;">15</span>s
+                </div>
+
+                <!-- Manual Override Section -->
+                <div class="override-section">
+                    <label>Manual Override (seconds)</label>
+                    <input type="range" class="form-range mt-1" min="10" max="90"
+                           value="30" id="slider-{{ lane }}"
+                           oninput="document.getElementById('slider-val-{{ lane }}').textContent=this.value+'s'">
+                    <div style="color:#2ecc71; font-size:13px; font-weight:700; margin:4px 0;"
+                         id="slider-val-{{ lane }}">30s</div>
+                    <button class="btn-green mb-2"
+                            onclick="setManualGreen('{{ lane }}')">
+                        🟢 Force GREEN
+                    </button>
+                    <button class="btn-gray"
+                            onclick="releaseOverride('{{ lane }}')">
+                        🔄 Return to AUTO
+                    </button>
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Release All Button -->
+    <div class="text-center mb-4">
+        <button onclick="releaseAll()"
+                style="background:#e74c3c; border:none; color:#fff;
+                       padding:12px 32px; border-radius:8px; font-weight:700;
+                       font-size:14px; cursor:pointer;">
+            🔄 Release ALL Manual Overrides → Return to AUTO
+        </button>
+    </div>
+
+    <!-- Signal Logic Explanation -->
+    <div style="background:#1a1a2e; border:1px solid #16213e;
+                border-radius:12px; padding:20px;">
+        <h6 style="color:#2ecc71; margin-bottom:12px;">
+            📋 Adaptive Signal Logic
+        </h6>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div style="background:#16213e; border-radius:8px; padding:12px; text-align:center;">
+                    <div style="font-size:24px;">🔴</div>
+                    <div style="font-weight:600;">0 Vehicles</div>
+                    <div style="color:#666; font-size:12px;">Lane skipped</div>
+                    <div style="color:#aaa; font-size:11px;">(Gap Actuation)</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div style="background:#16213e; border-radius:8px; padding:12px; text-align:center;">
+                    <div style="font-size:24px;">🟢</div>
+                    <div style="font-weight:600;">1-3 Vehicles</div>
+                    <div style="color:#2ecc71; font-size:12px;">Low Density</div>
+                    <div style="color:#aaa; font-size:11px;">15 seconds green</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div style="background:#16213e; border-radius:8px; padding:12px; text-align:center;">
+                    <div style="font-size:24px;">🟡</div>
+                    <div style="font-weight:600;">4-8 Vehicles</div>
+                    <div style="color:#f39c12; font-size:12px;">Medium Density</div>
+                    <div style="color:#aaa; font-size:11px;">30 seconds green</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div style="background:#16213e; border-radius:8px; padding:12px; text-align:center;">
+                    <div style="font-size:24px;">🔴</div>
+                    <div style="font-weight:600;">9+ Vehicles</div>
+                    <div style="color:#e74c3c; font-size:12px;">High Density</div>
+                    <div style="color:#aaa; font-size:11px;">50 seconds green</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const RING_CIRCUMFERENCE = 214; // 2 * PI * 34
+const MAX_GREEN = 50;
+
+// Max time for ring calculation per signal color
+const maxTimes = { GREEN: 50, YELLOW: 3, RED: 50 };
+
+// Track manual override state
+const manualOverride = {
+    North: false, South: false, East: false, West: false
+};
+
+// ── Update Traffic Light ──────────────────────────────────────
+function updateTrafficLight(lane, color, timeRemaining, greenAlloc,
+                             count, density) {
+    // Update lights
+    const redL    = document.getElementById('light-red-'    + lane);
+    const yellowL = document.getElementById('light-yellow-' + lane);
+    const greenL  = document.getElementById('light-green-'  + lane);
+
+    redL.className    = 'light light-red';
+    yellowL.className = 'light light-yellow';
+    greenL.className  = 'light light-green';
+
+    if (color === 'GREEN') {
+        greenL.className  += ' active-green';
+    } else if (color === 'YELLOW') {
+        yellowL.className += ' active-yellow';
+    } else {
+        redL.className    += ' active-red';
+    }
+
+    // Update signal label
+    const label = document.getElementById('signal-label-' + lane);
+    label.textContent = color;
+    label.style.color = color==='GREEN' ? '#2ecc71'
+                      : color==='YELLOW' ? '#f39c12' : '#e74c3c';
+
+    // Update countdown ring
+    const ring    = document.getElementById('ring-' + lane);
+    const counter = document.getElementById('countdown-' + lane);
+    const maxTime = maxTimes[color] || 50;
+    const pct     = maxTime > 0 ? timeRemaining / maxTime : 0;
+    const offset  = RING_CIRCUMFERENCE * (1 - pct);
+    ring.style.strokeDashoffset = offset;
+    ring.style.stroke = color==='GREEN' ? '#2ecc71'
+                      : color==='YELLOW' ? '#f39c12' : '#e74c3c';
+    counter.textContent   = timeRemaining > 0 ? timeRemaining : '--';
+    counter.style.color   = color==='GREEN' ? '#2ecc71'
+                          : color==='YELLOW' ? '#f39c12' : '#e74c3c';
+
+    // Update green allocation
+    document.getElementById('green-alloc-' + lane).textContent = greenAlloc;
+
+    // Update vehicle count and density
+    document.getElementById('vehicle-count-' + lane).textContent = count;
+    const densEl = document.getElementById('density-txt-' + lane);
+    densEl.textContent = density;
+    densEl.style.color = density==='High'   ? '#e74c3c'
+                       : density==='Medium' ? '#f39c12' : '#2ecc71';
+
+    // Update density bar
+    const pctDens = Math.min(100, (count / 15) * 100);
+    const bar     = document.getElementById('density-bar-' + lane);
+    bar.style.width      = pctDens + '%';
+    bar.style.background = density==='High'   ? '#e74c3c'
+                         : density==='Medium' ? '#f39c12' : '#2ecc71';
+
+    // Update summary bar
+    const dot = document.getElementById('bar-dot-' + lane);
+    dot.className = 'signal-dot-lg ' +
+        (color==='GREEN'  ? 'dot-green-lg'
+       : color==='YELLOW' ? 'dot-yellow-lg' : 'dot-red-lg');
+    document.getElementById('bar-signal-' + lane).textContent = color;
+    document.getElementById('bar-signal-' + lane).style.color =
+        color==='GREEN' ? '#2ecc71' : color==='YELLOW' ? '#f39c12' : '#e74c3c';
+    document.getElementById('bar-count-' + lane).textContent =
+        count + ' vehicle' + (count !== 1 ? 's' : '');
+}
+
+// ── Live Status Update ────────────────────────────────────────
+function fetchStatus() {
+    fetch('/api/status')
+    .then(r => r.json())
+    .then(data => {
+        const lanes = ['North','South','East','West'];
+        let anyManual = false;
+
+        lanes.forEach(lane => {
+            if (manualOverride[lane]) { anyManual = true; return; }
+
+            const sig      = data.signal_status[lane] || {};
+            const color    = sig.color || 'RED';
+            const timeRem  = sig.time_remaining || 0;
+            const count    = data.vehicle_counts[lane] || 0;
+            const density  = data.density_levels[lane] || 'Low';
+            const greenT   = data.green_times
+                           ? (data.green_times[lane] || 15) : 15;
+
+            updateTrafficLight(lane, color, timeRem,
+                               greenT, count, density);
+        });
+
+        // Update mode indicator
+        document.getElementById('mode-indicator').textContent =
+            anyManual ? 'MANUAL OVERRIDE' : 'AUTO MODE';
+        document.getElementById('mode-indicator').className =
+            'mode-badge ' + (anyManual ? 'mode-manual' : 'mode-auto');
+
+        document.getElementById('last-update').textContent =
+            '🕐 ' + data.timestamp;
+    })
+    .catch(e => console.log('Status error:', e));
+}
+
+// Update every second for smooth countdown
+setInterval(fetchStatus, 1000);
+fetchStatus(); // Immediate first call
+
+// ── Manual Override ───────────────────────────────────────────
+function setManualGreen(lane) {
+    const duration = document.getElementById('slider-' + lane).value;
+
+    fetch('/admin/signals/override', {
+        method:  'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body:    'lane=' + lane + '&duration=' + duration
+    })
+    .then(r => r.json())
+    .then(d => {
+        manualOverride[lane] = true;
+        document.getElementById('mode-' + lane).textContent = 'MANUAL';
+        document.getElementById('mode-' + lane).className  = 'mode-badge mode-manual';
+
+        // Update detection engine signal directly
+        fetch('/api/signal/override', {
+            method:  'POST',
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify({lane: lane, duration: parseInt(duration)})
+        }).catch(e => {});
+
+        alert(`✅ ${lane} set to GREEN for ${duration}s (Manual Override)`);
+    });
+}
+
+function releaseOverride(lane) {
+    fetch('/admin/signals/release', {method: 'POST'})
+    .then(r => r.json())
+    .then(() => {
+        manualOverride[lane] = false;
+        document.getElementById('mode-' + lane).textContent = 'AUTO';
+        document.getElementById('mode-' + lane).className  = 'mode-badge mode-auto';
+        alert(`✅ ${lane} returned to AUTO mode`);
+    });
+}
+
+function releaseAll() {
+    fetch('/admin/signals/release', {method: 'POST'})
+    .then(r => r.json())
+    .then(() => {
+        ['North','South','East','West'].forEach(l => {
+            manualOverride[l] = false;
+            document.getElementById('mode-' + l).textContent = 'AUTO';
+            document.getElementById('mode-' + l).className  = 'mode-badge mode-auto';
+        });
+        alert('✅ All lanes returned to AUTO adaptive mode');
+    });
+}
+</script>
+</body>
+</html>

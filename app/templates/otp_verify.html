@@ -1,0 +1,280 @@
+<!doctype html>
+<!-- This template shows OTP input boxes and a resend countdown. -->
+<html lang="en">
+  <!-- The head contains metadata and we include a tiny CSS/JS styling block. -->
+  <head>
+    <!-- Character set for correct text rendering. -->
+    <meta charset="utf-8" />
+    <!-- Responsive viewport for mobile screens. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Page title for easy navigation during testing. -->
+    <title>I-STE OTP Verification</title>
+
+    <!-- Inline CSS keeps this beginner project simple (no extra files). -->
+    <style>
+      /* Use a centered layout so the OTP boxes look clean. */
+      body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+      /* Center the card content on the page. */
+      .container { max-width: 520px; margin: 40px auto; padding: 0 16px; }
+      /* Card styling for visual separation. */
+      .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+      /* Big heading spacing. */
+      h2 { margin-top: 0; }
+      /* OTP input row layout. */
+      .otp-row { display: flex; gap: 10px; justify-content: center; margin: 16px 0; }
+      /* Each OTP digit input box styling. */
+      .otp-digit {
+        width: 48px; height: 56px; text-align: center;
+        font-size: 22px; border-radius: 10px; border: 1px solid #ddd;
+      }
+      /* Disabled resend button opacity. */
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      /* Error message style. */
+      .msg { margin-top: 12px; min-height: 20px; font-size: 14px; color: #b00020; }
+    </style>
+  </head>
+
+  <body>
+    <!-- Main container for the page content. -->
+    <div class="container">
+      <!-- Card UI wrapper for OTP. -->
+      <div class="card">
+        <!-- Page heading. -->
+        <h2>Verify your phone</h2>
+
+        <!-- We show which phone OTP is for (read-only). -->
+        <p style="margin-bottom: 6px;">
+          Phone: <strong id="phoneLabel">{{ phone_number }}</strong>
+        </p>
+
+        <!-- OTP expiry countdown display. -->
+        <p style="margin-top: 0;">
+          OTP expires in <strong id="expiryCountdown">{{ seconds_left }}</strong> seconds.
+        </p>
+
+        <!-- OTP input boxes for 6 digits. -->
+        <div class="otp-row" id="otpInputs">
+          <!-- We create 6 inputs with indexes 0..5. -->
+          <input class="otp-digit" inputmode="numeric" maxlength="1" type="text" autocomplete="one-time-code" />
+          <input class="otp-digit" inputmode="numeric" maxlength="1" type="text" autocomplete="one-time-code" />
+          <input class="otp-digit" inputmode="numeric" maxlength="1" type="text" autocomplete="one-time-code" />
+          <input class="otp-digit" inputmode="numeric" maxlength="1" type="text" autocomplete="one-time-code" />
+          <input class="otp-digit" inputmode="numeric" maxlength="1" type="text" autocomplete="one-time-code" />
+          <input class="otp-digit" inputmode="numeric" maxlength="1" type="text" autocomplete="one-time-code" />
+        </div>
+
+        <!-- A verify button to submit OTP to backend. -->
+        <div style="text-align:center;">
+          <button id="verifyBtn" type="button" class="btn btn-primary" style="padding: 10px 16px; border-radius: 10px;">
+            Verify OTP
+          </button>
+        </div>
+
+        <!-- Message area to show errors like invalid OTP / attempts remaining. -->
+        <div class="msg" id="msg"></div>
+
+        <!-- Resend button with cooldown. -->
+        <div style="text-align:center; margin-top: 16px;">
+          <button id="resendBtn" type="button" style="padding: 10px 16px; border-radius: 10px;" class="btn btn-secondary" disabled>
+            Resend OTP (<span id="resendCountdown">{{ resend_seconds_left }}</span>s)
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- JavaScript runs after page loads. -->
+    <script>
+      // Helper to get phone number from the page label text.
+      const phoneNumber = document.getElementById('phoneLabel').textContent.trim();
+
+      // Collect the 6 OTP digit input elements.
+      const inputs = Array.from(document.querySelectorAll('#otpInputs .otp-digit'));
+
+      // Cache DOM elements for easier updates.
+      const msgEl = document.getElementById('msg');
+      const verifyBtn = document.getElementById('verifyBtn');
+      const resendBtn = document.getElementById('resendBtn');
+      const expiryCountdownEl = document.getElementById('expiryCountdown');
+      const resendCountdownEl = document.getElementById('resendCountdown');
+
+      // Read initial countdown values from template (server-rendered).
+      let secondsLeft = parseInt('{{ seconds_left }}', 10);
+      let resendSecondsLeft = parseInt('{{ resend_seconds_left }}', 10);
+
+      // Focus the first input automatically so user can start typing immediately.
+      if (inputs.length > 0) { inputs[0].focus(); }
+
+      // If resend is already allowed (cooldown is 0), enable the resend button immediately.
+      if (resendSecondsLeft <= 0) { resendBtn.disabled = false; }
+
+      // Update OTP expiry countdown every second.
+      setInterval(() => {
+        // Decrease time left until it hits zero.
+        if (secondsLeft > 0) {
+          secondsLeft -= 1;
+          expiryCountdownEl.textContent = secondsLeft;
+        }
+      }, 1000);
+
+      // Update resend cooldown every second.
+      setInterval(() => {
+        if (resendSecondsLeft > 0) {
+          resendSecondsLeft -= 1;
+          resendCountdownEl.textContent = resendSecondsLeft;
+          resendBtn.disabled = true;
+        } else {
+          // When cooldown ends, enable resend button.
+          resendBtn.disabled = false;
+        }
+      }, 1000);
+
+      // This function sets cursor to the next empty input after typing.
+      function moveToNext(index) {
+        // If index is the last input, do nothing.
+        if (index >= inputs.length - 1) { return; }
+
+        // Focus the next input.
+        inputs[index + 1].focus();
+      }
+
+      // This function sets cursor to the previous input when backspace is pressed.
+      function moveToPrev(index) {
+        // If index is the first input, do nothing.
+        if (index <= 0) { return; }
+
+        // Focus the previous input.
+        inputs[index - 1].focus();
+      }
+
+      // Add events to each OTP input box.
+      inputs.forEach((input, index) => {
+        // When user types, we restrict to one digit and move focus.
+        input.addEventListener('input', (e) => {
+          // Remove non-digit characters just in case.
+          input.value = input.value.replace(/[^0-9]/g, '');
+
+          // If a digit exists, move to next box.
+          if (input.value.length === 1) { moveToNext(index); }
+        });
+
+        // Handle backspace to move focus backwards.
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && input.value.length === 0) {
+            moveToPrev(index);
+          }
+        });
+      });
+
+      // Build the OTP string from all 6 input values.
+      function getOtpValue() {
+        // Join all digits into a single OTP string.
+        return inputs.map(i => i.value).join('');
+      }
+
+      // Clear error message before new actions.
+      function clearMessage() {
+        msgEl.textContent = '';
+      }
+
+      // Show an error or success message.
+      function showMessage(text) {
+        msgEl.textContent = text;
+      }
+
+      // Verify button handler: sends phone + OTP to backend.
+      verifyBtn.addEventListener('click', async () => {
+        // Clear old messages.
+        clearMessage();
+
+        // If expiry reached zero, block verify and show message.
+        if (secondsLeft <= 0) {
+          showMessage('OTP expired. Please resend OTP.');
+          return;
+        }
+
+        // Collect OTP digits.
+        const otp = getOtpValue();
+
+        // Validate that all 6 boxes are filled.
+        if (otp.length !== 6 || inputs.some(i => !i.value)) {
+          showMessage('Please enter the 6-digit OTP.');
+          return;
+        }
+
+        // Send OTP verification request to backend.
+        const res = await fetch('/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone_number: phoneNumber, otp })
+        });
+
+        // Parse JSON response.
+        const data = await res.json();
+
+        // If verification failed, show error + attempts remaining.
+        if (!data.success) {
+          if (data.attempts_remaining !== undefined) {
+            showMessage(`${data.error} Attempts left: ${data.attempts_remaining}.`);
+          } else {
+            showMessage(data.error || 'Invalid OTP.');
+          }
+          return;
+        }
+
+        // Verification succeeded: redirect to the role dashboard.
+        if (data.redirect) {
+          window.location.href = data.redirect;
+          return;
+        }
+
+        // Fallback if backend didn't provide redirect.
+        showMessage(data.message || 'OTP verified successfully.');
+      });
+
+      // Resend button handler: calls backend to generate/send a new OTP.
+      resendBtn.addEventListener('click', async () => {
+        // Clear old messages.
+        clearMessage();
+
+        // If cooldown is not finished, block resend.
+        if (resendSecondsLeft > 0) { return; }
+
+        // Send resend request.
+        const res = await fetch('/auth/resend-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone_number: phoneNumber })
+        });
+
+        // Parse JSON response.
+        const data = await res.json();
+
+        // Handle failure.
+        if (!data.success) {
+          showMessage(data.error || 'Could not resend OTP.');
+          return;
+        }
+
+        // On success, reset inputs and timers from backend.
+        inputs.forEach((i) => { i.value = ''; });
+        inputs[0].focus();
+
+        // Update OTP expiry countdown based on backend expiry_seconds.
+        secondsLeft = parseInt(data.expiry_seconds || 300, 10);
+        expiryCountdownEl.textContent = secondsLeft;
+
+        // Update resend cooldown based on backend next_resend_ts.
+        // We compute seconds left until next resend is allowed.
+        const now = Math.floor(Date.now() / 1000);
+        const nextResendTs = parseInt(data.next_resend_ts || (now + 60), 10);
+        resendSecondsLeft = Math.max(0, nextResendTs - now);
+        resendCountdownEl.textContent = resendSecondsLeft;
+
+        // Ensure button is disabled during cooldown.
+        resendBtn.disabled = true;
+      });
+    </script>
+  </body>
+</html>
+
